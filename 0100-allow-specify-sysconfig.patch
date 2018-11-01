@@ -1,0 +1,89 @@
+diff --git a/util/grub-install.c b/util/grub-install.c
+index 78d0138cb..1768828cd 100644
+--- a/util/grub-install.c
++++ b/util/grub-install.c
+@@ -79,6 +79,7 @@ static char *label_color;
+ static char *label_bgcolor;
+ static char *product_version;
+ static int add_rs_codes = 1;
++static char *sysconfigdir = NULL;
+ 
+ enum
+   {
+@@ -109,7 +110,8 @@ enum
+     OPTION_LABEL_FONT,
+     OPTION_LABEL_COLOR,
+     OPTION_LABEL_BGCOLOR,
+-    OPTION_PRODUCT_VERSION
++    OPTION_PRODUCT_VERSION,
++    OPTION_SYSCONFIG_DIRECTORY
+   };
+ 
+ static int fs_probe = 1;
+@@ -181,6 +183,11 @@ argp_parser (int key, char *arg, struct argp_state *state)
+       efidir = xstrdup (arg);
+       return 0;
+ 
++    case OPTION_SYSCONFIG_DIRECTORY:
++      free (sysconfigdir);
++      sysconfigdir = xstrdup (arg);
++      return 0;
++
+     case OPTION_DISK_MODULE:
+       free (disk_module);
+       disk_module = xstrdup (arg);
+@@ -298,6 +305,8 @@ static struct argp_option options[] = {
+    N_("use DIR as the EFI System Partition root."), 2},
+   {"macppc-directory", OPTION_MACPPC_DIRECTORY, N_("DIR"), 0,
+    N_("use DIR for PPC MAC install."), 2},
++  {"sysconfig-directory", OPTION_SYSCONFIG_DIRECTORY, N_("DIR"), 0,
++   N_("use DIR for the System Config directory."), 2},
+   {"label-font", OPTION_LABEL_FONT, N_("FILE"), 0, N_("use FILE as font for label"), 2},
+   {"label-color", OPTION_LABEL_COLOR, N_("COLOR"), 0, N_("use COLOR for label"), 2},
+   {"label-bgcolor", OPTION_LABEL_BGCOLOR, N_("COLOR"), 0, N_("use COLOR for label background"), 2},
+@@ -847,6 +856,9 @@ main (int argc, char *argv[])
+   if (verbosity > 1)
+     grub_env_set ("debug", "all");
+ 
++  if (!sysconfigdir)
++    sysconfigdir = grub_util_get_config_filename ();
++
+   grub_util_load_config (&config);
+ 
+   if (!bootloader_id && config.grub_distributor)
+@@ -1275,7 +1287,7 @@ main (int argc, char *argv[])
+   if (!config.is_cryptodisk_enabled && have_cryptodisk)
+     grub_util_error (_("attempt to install to encrypted disk without cryptodisk enabled. "
+ 		       "Set `%s' in file `%s'"), "GRUB_ENABLE_CRYPTODISK=y",
+-		     grub_util_get_config_filename ());
++		       sysconfigdir);
+ 
+   if (disk_module && grub_strcmp (disk_module, "ata") == 0)
+     grub_install_push_module ("pata");
+diff --git a/util/grub-mkconfig.in b/util/grub-mkconfig.in
+index 33332360e..85b3d7fff 100644
+--- a/util/grub-mkconfig.in
++++ b/util/grub-mkconfig.in
+@@ -25,7 +25,12 @@ prefix="@prefix@"
+ exec_prefix="@exec_prefix@"
+ sbindir="@sbindir@"
+ bindir="@bindir@"
+-sysconfdir="@sysconfdir@"
++# Modified to allow sysconfdir to be passed at runtime in environment.
++if [ -z "${GRUB_SYSCONFDIR}" ]; then
++    sysconfdir="@sysconfdir@"
++else
++    sysconfdir="${GRUB_SYSCONFDIR}"
++fi
+ PACKAGE_NAME=@PACKAGE_NAME@
+ PACKAGE_VERSION=@PACKAGE_VERSION@
+ host_os=@host_os@
+@@ -61,6 +66,8 @@ usage () {
+     print_option_help "-h, --help" "$(gettext "print this message and exit")"
+     print_option_help "-v, --version" "$(gettext "print the version information and exit")"
+     echo
++    gettext "Use GRUB_SYSCONFDIR in environment to set the configuration root."
++    echo
+     gettext "Report bugs to <bug-grub@gnu.org>."; echo
+ }
+ 
