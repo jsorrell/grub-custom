@@ -1,5 +1,137 @@
+diff --git a/grub-core/osdep/aros/config.c b/grub-core/osdep/aros/config.c
+index c82d0ea8e..4ec63dd0b 100644
+--- a/grub-core/osdep/aros/config.c
++++ b/grub-core/osdep/aros/config.c
+@@ -31,11 +31,11 @@
+ #include <stdlib.h>
+ 
+ const char *
+-grub_util_get_config_filename (void)
++grub_util_get_config_filename (const char *sysconfdir)
+ {
+   static char *value = NULL;
+   if (!value)
+-    value = grub_util_path_concat (3, GRUB_SYSCONFDIR,
++    value = grub_util_path_concat (3, sysconfdir ? sysconfdir : GRUB_SYSCONFDIR,
+ 				   "default", "grub");
+   return value;
+ }
+@@ -62,7 +62,7 @@ grub_util_get_localedir (void)
+ }
+ 
+ void
+-grub_util_load_config (struct grub_util_config *cfg)
++grub_util_load_config (struct grub_util_config *cfg, const char *sysconfdir)
+ {
+   const char *cfgfile;
+   FILE *f = NULL;
+@@ -78,7 +78,7 @@ grub_util_load_config (struct grub_util_config *cfg)
+   if (v)
+     cfg->grub_distributor = xstrdup (v);
+ 
+-  cfgfile = grub_util_get_config_filename ();
++  cfgfile = grub_util_get_config_filename (sysconfdir);
+   if (!grub_util_is_regular (cfgfile))
+     return;
+ 
+diff --git a/grub-core/osdep/unix/config.c b/grub-core/osdep/unix/config.c
+index 65effa9f3..096592578 100644
+--- a/grub-core/osdep/unix/config.c
++++ b/grub-core/osdep/unix/config.c
+@@ -31,11 +31,11 @@
+ #include <stdlib.h>
+ 
+ const char *
+-grub_util_get_config_filename (void)
++grub_util_get_config_filename (const char *sysconfdir)
+ {
+   static char *value = NULL;
+   if (!value)
+-    value = grub_util_path_concat (3, GRUB_SYSCONFDIR,
++    value = grub_util_path_concat (3, sysconfdir ? sysconfdir : GRUB_SYSCONFDIR,
+ 				   "default", "grub");
+   return value;
+ }
+@@ -62,7 +62,7 @@ grub_util_get_localedir (void)
+ }
+ 
+ void
+-grub_util_load_config (struct grub_util_config *cfg)
++grub_util_load_config (struct grub_util_config *cfg, const char *sysconfdir)
+ {
+   pid_t pid;
+   const char *argv[4];
+@@ -82,7 +82,7 @@ grub_util_load_config (struct grub_util_config *cfg)
+   if (v)
+     cfg->grub_distributor = xstrdup (v);
+ 
+-  cfgfile = grub_util_get_config_filename ();
++  cfgfile = grub_util_get_config_filename (sysconfdir);
+   if (!grub_util_is_regular (cfgfile))
+     return;
+ 
+diff --git a/grub-core/osdep/windows/config.c b/grub-core/osdep/windows/config.c
+index 928ab1a49..f6e683331 100644
+--- a/grub-core/osdep/windows/config.c
++++ b/grub-core/osdep/windows/config.c
+@@ -25,13 +25,13 @@
+ #include <grub/util/misc.h>
+ 
+ void
+-grub_util_load_config (struct grub_util_config *cfg)
++grub_util_load_config (struct grub_util_config *cfg, const char *sysconfdir)
+ {
+   const char *cfgfile;
+   FILE *f = NULL;
+   const char *v;
+ 
+-  cfgfile = grub_util_get_config_filename ();
++  cfgfile = grub_util_get_config_filename (sysconfdir);
+   if (!grub_util_is_regular (cfgfile))
+     return;
+ 
+diff --git a/grub-core/osdep/windows/init.c b/grub-core/osdep/windows/init.c
+index e8ffd62c6..bee08ac7e 100644
+--- a/grub-core/osdep/windows/init.c
++++ b/grub-core/osdep/windows/init.c
+@@ -116,11 +116,11 @@ static char *grub_util_base_directory;
+ static char *locale_dir;
+ 
+ const char *
+-grub_util_get_config_filename (void)
++grub_util_get_config_filename (const char *sysconfdir)
+ {
+   static char *value = NULL;
+   if (!value)
+-    value = grub_util_path_concat (2, grub_util_base_directory, "grub.cfg");
++    value = grub_util_path_concat (2, sysconfdir ? sysconfdir : grub_util_base_directory, "grub.cfg");
+   return value;
+ }
+ 
+diff --git a/include/grub/emu/config.h b/include/grub/emu/config.h
+index 875d5896c..e215a2e3e 100644
+--- a/include/grub/emu/config.h
++++ b/include/grub/emu/config.h
+@@ -25,7 +25,7 @@
+ #include <stdio.h>
+ 
+ const char *
+-grub_util_get_config_filename (void);
++grub_util_get_config_filename (const char *sysconfdir);
+ const char *
+ grub_util_get_pkgdatadir (void);
+ const char *
+@@ -40,7 +40,7 @@ struct grub_util_config
+ };
+ 
+ void
+-grub_util_load_config (struct grub_util_config *cfg);
++grub_util_load_config (struct grub_util_config *cfg, const char *sysconfdir);
+ 
+ void
+ grub_util_parse_config (FILE *f, struct grub_util_config *cfg, int simple);
 diff --git a/util/grub-install.c b/util/grub-install.c
-index 78d0138cb..1768828cd 100644
+index 78d0138cb..58bff2558 100644
 --- a/util/grub-install.c
 +++ b/util/grub-install.c
 @@ -79,6 +79,7 @@ static char *label_color;
@@ -41,22 +173,21 @@ index 78d0138cb..1768828cd 100644
    {"label-font", OPTION_LABEL_FONT, N_("FILE"), 0, N_("use FILE as font for label"), 2},
    {"label-color", OPTION_LABEL_COLOR, N_("COLOR"), 0, N_("use COLOR for label"), 2},
    {"label-bgcolor", OPTION_LABEL_BGCOLOR, N_("COLOR"), 0, N_("use COLOR for label background"), 2},
-@@ -847,6 +856,9 @@ main (int argc, char *argv[])
+@@ -847,7 +856,7 @@ main (int argc, char *argv[])
    if (verbosity > 1)
      grub_env_set ("debug", "all");
  
-+  if (!sysconfigdir)
-+    sysconfigdir = grub_util_get_config_filename ();
-+
-   grub_util_load_config (&config);
+-  grub_util_load_config (&config);
++  grub_util_load_config (&config, sysconfigdir);
  
    if (!bootloader_id && config.grub_distributor)
-@@ -1275,7 +1287,7 @@ main (int argc, char *argv[])
+     {
+@@ -1275,7 +1284,7 @@ main (int argc, char *argv[])
    if (!config.is_cryptodisk_enabled && have_cryptodisk)
      grub_util_error (_("attempt to install to encrypted disk without cryptodisk enabled. "
  		       "Set `%s' in file `%s'"), "GRUB_ENABLE_CRYPTODISK=y",
 -		     grub_util_get_config_filename ());
-+		       sysconfigdir);
++		       grub_util_get_config_filename (sysconfigdir));
  
    if (disk_module && grub_strcmp (disk_module, "ata") == 0)
      grub_install_push_module ("pata");

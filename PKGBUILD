@@ -29,12 +29,12 @@ license=('GPL3')
 backup=('boot/grub/grub.cfg'
         'etc/default/grub'
         'etc/grub.d/40_custom')
-install="${pkgname}.install"
+install="grub.install"
 options=('!makeflags')
 
-conflicts=('grub-common' 'grub-bios' 'grub-emu' "grub-efi-${_EFI_ARCH}" 'grub-legacy')
-replaces=('grub-common' 'grub-bios' 'grub-emu' "grub-efi-${_EFI_ARCH}")
-provides=('grub-common' 'grub-bios' 'grub-emu' "grub-efi-${_EFI_ARCH}")
+conflicts=('grub-common' 'grub-bios' 'grub-emu' "grub-efi-${_EFI_ARCH}" 'grub-legacy' 'grub')
+replaces=('grub-common' 'grub-bios' 'grub-emu' "grub-efi-${_EFI_ARCH}" 'grub')
+provides=('grub-common' 'grub-bios' 'grub-emu' "grub-efi-${_EFI_ARCH}" 'grub')
 
 makedepends=('git' 'rsync' 'xz' 'freetype2' 'ttf-dejavu' 'python' 'autogen'
              'texinfo' 'help2man' 'gettext' 'device-mapper' 'fuse2')
@@ -56,7 +56,7 @@ fi
 validpgpkeys=('E53D497F3FA42AD8C9B4D1E835A93B74E82E4209'  # Vladimir 'phcoder' Serbinenko <phcoder@gmail.com>
               '95D2E9AB8740D8046387FD151A09227B1F435A33') # Paul Hardy <unifoundry@unifoundry.com>
 
-source=("https://ftp.gnu.org/gnu/${pkgname}/${pkgname}-${pkgver}.tar.xz"{,.sig}
+source=("https://ftp.gnu.org/gnu/grub/grub-${pkgver}.tar.xz"{,.sig}
         "https://git.savannah.nongnu.org/cgit/grub-extras.git/snapshot/grub-extras-${_GRUB_EXTRAS_COMMIT}.tar.gz"
         "https://ftp.gnu.org/gnu/unifont/unifont-${_UNIFONT_VER}/unifont-${_UNIFONT_VER}.bdf.gz"{,.sig}
         '0003-10_linux-detect-archlinux-initramfs.patch'
@@ -85,8 +85,8 @@ sha256sums=('810b3798d316394f94096ec2797909dbf23c858e48f7b3830826b8daa06b7b0f'
             'e84b8de569c7e6b73263758c35cf95c6516fde85d4ed451991427864f6a4e5a8'
             'fcd5a626d4af33665d041ce42df813f1f198d8230ea186481b155a5b676f3b87'
             '51562fa1016c54567dbf42a86c0cfc902372ab579bbee17879a81aff09b76b99'
-	    'da5b347ae1a5916fbca02bff81e4db5f7a6d2e4450c671107620beaee27b1e86'
-            'fee82e043265173693c6b856e68c77d86664331ec05a9385e701e16e26afdfb4'
+	    'eac3bb62d1238fc2ac3115cbb7ef3430d71fa09e4994682fd41ac70fac194230'
+	    '9589f9deb843abd7e18a9ab5c5770190520046d28bcaef96ee5e01353bb5a808'
             '74e5dd2090a153c10a7b9599b73bb09e70fddc6a019dd41641b0f10b9d773d82'
             'c5e4f3836130c6885e9273c21f057263eba53f4b7c0e2f111f6e5f2e487a47ad')
 		
